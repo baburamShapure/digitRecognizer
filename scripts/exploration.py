@@ -2,77 +2,39 @@ import pandas as pd
 import numpy as np 
 import matplotlib.pyplot as plt 
 import os
-import torch
-from torch import nn
-import torch.nn.functional as F
-from torch.autograd import Variable
-import torch.utils.data as tdata
 from sklearn.model_selection import train_test_split
-
+import pickle as pkl
 
 #read train data. 
-traindata = pd.read_csv('data/train.csv', dtype = np.float32)
+traindata = pd.read_csv('data/train.csv', 
+                        dtype = np.float32)
 traindata.head()
 
-D_in, H, D_out = 784, 100, 10
+# split the data right now. 
+y = traindata['label'].values
+x = traindata.drop('label', axis = 1).values
+xtrain, xtest, ytrain, ytest = train_test_split(
+    x, y, test_size= 0.4, random_state = 0
+)
 
-x_train = traindata.iloc[:, 1: ].values
-y_train =  traindata['label'].values
+# save for later. 
+train_ = {"x": xtrain, "y":ytrain}
+test_ = {"x": xtest, "y": ytest}
 
+with open("adhoc/train.pkl", "wb") as f:
+    pkl.dump(train_, f)
+f.close()
+with open("adhoc/validate.pkl", "wb") as f:
+    pkl.dump(test_, f)
+f.close()
 
-train_target = torch.from_numpy(y_train).type(torch.LongTensor)
-train_features = torch.from_numpy(x_train)
+# preview the images first
+plt.figure(figsize=(12,10))
+x, y = 10, 4
+for i in range(40):  
+    plt.subplot(y, x, i+1)
+    plt.imshow((xtrain[i]/255.0).reshape((28,28)),
+                interpolation='nearest')
+plt.show()
 
-traintensor = tdata.TensorDataset(train_features, train_target) 
-
-trainloader = tdata.DataLoader(dataset = traintensor,
-                                    batch_size = 45, 
-                                    shuffle = True)
-
-dataiter = iter(trainloader)
-images, labels = dataiter.next()
-
-
-class Net(nn.Module):
-    def __init__(self):
-        super(Net, self).__init__()
-        self.fc1 = nn.Linear(28 * 28, 200)
-        self.fc2 = nn.Linear(200, 200)
-        self.fc3 = nn.Linear(200, 10)
-
-    def forward(self, x):
-        x= F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
-        x = self.fc3(x)
-        return F.log_softmax(x)
-
-model = Net()
-
-# specify the loss function. 
-loss_fun = nn.NLLLoss()
-
-# learning rate. 
-lr = 1e-4
-# optimizer. 
-optimizer = torch.optim.Adam(model.parameters(), lr= lr)
-
-for epoch in range(2):
-    running_loss = 0
-
-    for i, data in enumerate(trainloader, 0):
-        
-        features, labels = data
-        features, labels = Variable(features), Variable(labels)
-        features = features.view(-1, 28 * 28)
-        labels = labels.view(-1)
-        optimizer.zero_grad()
-        outputs = model(features)
-        loss = loss_fun(outputs, labels)
-        loss.backward()
-        optimizer.step()
-        # print statistics
-        running_loss += loss.item()
-        if i % 10 == 0:    # print every 10 mini-batches
-            print('[%d, %5d] loss: %.3f' %
-                  (epoch + 1, i + 1, running_loss / 10))
-            running_loss = 0.0
+xtrain[0] / 255.0

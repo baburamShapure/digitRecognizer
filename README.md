@@ -26,4 +26,3 @@ Had a recurring issue with tensor types. Finally, a kaggle kernel provided a sol
 **December 27, 2018**
 Pytorch looks interesting. But will fall back to keras.  Been using it for the last 1 and half years. Created 2 new folders inside scripts and models, to keep track of my keras and pytorch models.
 
-
