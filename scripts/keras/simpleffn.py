@@ -56,6 +56,17 @@ yvalidate_ohe = keras.utils.to_categorical(yvalidate, 10)
 
 model.evaluate(x= xvalidate, y= yvalidate_ohe)
 
+# serialize model to JSON
+timestamp = dt.datetime.now().strftime('%Y%m%d_%H%M%S')
+model_json = model.to_json()
+with open("models/keras/model_" + timestamp +".json", "w") as json_file:
+    json_file.write(model_json)
+
+# serialize weights to HDF5
+model.save_weights("models/keras/model_" + timestamp + ".h5")
+print("Saved model to disk")
+
+
 y_pred = model.predict(xvalidate)
 y_pred_classes = np.argmax(y_pred, axis = 1) 
 confusion_mtx = confusion_matrix(yvalidate, y_pred_classes) 
@@ -105,3 +116,4 @@ outd = pd.DataFrame({'ImageId': range(1, testdata.shape[0]+1),
 timestamp = dt.datetime.now().strftime('%Y%m%d_%H%M%S')
 outd.to_csv(os.path.join('out', timestamp + '.csv'), 
                             index = None)
+
