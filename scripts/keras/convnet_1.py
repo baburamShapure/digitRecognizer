@@ -53,4 +53,42 @@ model.compile(loss='categorical_crossentropy', optimizer=sgd)
 
 model.fit(xtrain, ytrain_ohe, batch_size=32, epochs=10)
 
-score = model.evaluate(x_test, y_test, batch_size=32)
+#  serialize model to JSON
+timestamp = dt.datetime.now().strftime('%Y%m%d_%H%M%S')
+model_json = model.to_json()
+with open("models/keras/model_" + timestamp +".json", "w") as json_file:
+    json_file.write(model_json)
+
+# serialize weights to HDF5
+model.save_weights("models/keras/model_" + timestamp + ".h5")
+print("Saved model to disk")
+
+# the validation datasets. 
+validate_  = pkl.load(open("adhoc/validate.pkl", "rb"))
+xvalidate = validate_["x"]
+yvalidate = validate_["y"]
+xvalidate = xvalidate / 255.0
+yvalidate_ohe = keras.utils.to_categorical(yvalidate, 10)
+xvalidate = xvalidate.reshape(-1, 28, 28, 1)
+
+model.evaluate(x= xvalidate, y= yvalidate_ohe)
+
+y_pred = model.predict(xvalidate)
+y_pred_classes = np.argmax(y_pred, axis = 1) 
+confusion_mtx = confusion_matrix(yvalidate, y_pred_classes) 
+
+
+# predict on test data. 
+testdata = pd.read_csv("data/test.csv", dtype= np.float32)
+xtest = testdata.values/255.0
+xtest = xtest.reshape(-1, 28, 28, 1)
+ytest_scores = model.predict(xtest)
+ytest_class = np.argmax(ytest_scores, axis= 1)
+
+outd = pd.DataFrame({'ImageId': range(1, testdata.shape[0]+1),
+                        'Label': ytest_class})
+
+timestamp = dt.datetime.now().strftime('%Y%m%d_%H%M%S')
+outd.to_csv(os.path.join('out', timestamp + '.csv'), 
+                            index = None)
+
